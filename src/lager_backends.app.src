@@ -1,0 +1,8 @@
+{application, lager_backends,
+ [ {description,  "lager_backends"}
+ , {vsn,          git}
+ , {registered,   []}
+ , {applications, [kernel, stdlib]}
+ , {env,          []}
+ ]
+}.
