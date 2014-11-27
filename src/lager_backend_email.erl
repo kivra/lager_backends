@@ -39,14 +39,17 @@
            , from
            , to
            , rate
+           , host
            }).
 
 %%%_ * gen_event callbacks ---------------------------------------------
 init([Level, From, To]) ->
+  {ok, Hostname} = inet:gethostname(),
   {ok, #s{level=lager_util:level_to_num(Level),
           from=From,
           to=To,
-          rate=rate_limit_new(?messages_per_minute)}}.
+          rate=rate_limit_new(?messages_per_minute),
+          host=Hostname}}.
 
 terminate(_Rsn, _S) ->
   ok.
@@ -72,9 +75,9 @@ code_change(_OldVsn, S, _Extra) ->
 %%%_* Private functions ================================================
 maybe_send(S, Msg) ->
   S#s{rate=rate_limit_maybe(
-             S#s.rate, fun() -> do_send(Msg, S#s.from, S#s.to) end)}.
+             S#s.rate, fun() -> do_send(Msg, S#s.from, S#s.to, S#s.host) end)}.
 
-do_send(Msg, From, To) ->
+do_send(Msg, From, To, Host) ->
   %% NOTE: the gen_event is running in the same process as the
   %% event_manager (and every other backend). linking risks taking
   %% everything down.
@@ -90,6 +93,7 @@ do_send(Msg, From, To) ->
         Subject      = string:substr(Subject0, 1, 128),
         Body         = iolist_to_binary(
                          ["Node: ", atom_to_list(erlang:node()), "\n",
+                          "Host: ", Host, "\n",
                           "Date: ", Date, "\n",
                           "Time: ", Time, "\n",
                           "Location: ", io_lib:format("~p~n", [Location]),
